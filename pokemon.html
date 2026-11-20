@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포켓몬스터 : 울트라 익스팬션</title>
+    <link rel="stylesheet" href="pokemon.css">
+    <link rel="stylesheet" href="reborn.css">
+</head>
+<body>
+
+    <h1 class="title"><span class="pokeball-icon" aria-hidden="true"></span> 포켓몬스터 : 울트라 익스팬션 <span class="pokeball-icon" aria-hidden="true"></span></h1>
+
+    <div id="game-wrapper">
+      <div id="power-led"></div>
+      <button id="sound-toggle-btn" onclick="toggleAudioMute()" title="사운드 켜기/끄기">🔊</button>
+      <button id="help-btn" onclick="openHelpModal()" title="조작 방법 (? 키)">?</button>
+      <div id="ds-hinge-bar">
+        <span class="hinge-dot"></span><span class="hinge-dot"></span><span class="hinge-dot"></span>
+      </div>
+      <div id="screen-area">
+        <canvas id="gameCanvas" width="900" height="650"></canvas>
+        <canvas id="threeCanvas" width="900" height="650"></canvas>
+
+        <div id="toast-msg">시스템 준비 완료</div>
+
+        <!-- 전투 진입 트랜지션 (실제 게임의 화면 전환 연출 재현) -->
+        <div id="battle-transition"><div class="bt-shutter bt-top"></div><div class="bt-shutter bt-bottom"></div><div class="bt-flash"></div><div class="bt-ring"></div></div>
+
+        <!-- 업적 해금 팝업 -->
+        <div id="achievement-popup">
+            <div class="ach-icon" id="ach-pop-icon">🏆</div>
+            <div class="ach-text">
+                <div class="ach-label">업적 달성!</div>
+                <div class="ach-name" id="ach-pop-name">-</div>
+                <div class="ach-desc" id="ach-pop-desc">-</div>
+            </div>
+        </div>
+
+        <!-- 자동 저장 표시 -->
+        <div id="save-indicator">💾 저장됨</div>
+
+        <!-- 필드 HUD -->
+        <div id="hud-layer">                    
+            <div class="hud-card" id="hud-pokemon-card">
+                <div class="hud-title">
+                    <span id="hud-name">나무지기</span>
+                    <span style="color:var(--neon-amber)">Lv.<span id="hud-level">5</span></span>
+                </div>
+                <div class="hud-sub">
+                    HP <span id="hud-hp-val">24/24</span> | 성격: <span id="hud-nature" style="color:var(--neon-cyan)">겁쟁이</span>
+                </div>
+                <div class="bar-container">
+                    <div id="hud-hp-bar" class="bar-fill bar-hp" style="width:100%"></div>
+                </div>
+                <div class="bar-container" style="margin-top:3px;">
+                    <div id="hud-exp-bar" class="bar-fill bar-exp" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div class="hud-card" style="min-width: 220px; text-align: right;">
+                <div class="hud-title" style="justify-content: flex-end; gap:6px;">
+                    📍 <span id="hud-location" style="color:var(--neon-cyan)">연두마을</span>
+                </div>
+                <div class="hud-sub" style="margin-top:2px;">
+                    👤 <span id="hud-trainer" style="color:var(--neon-green, #86efac)">트레이너</span>
+                </div>
+                <div class="hud-sub" id="hud-region" style="margin-top:2px; color:var(--neon-cyan);">-</div>
+                <div class="hud-sub" id="hud-repel" style="margin-top:2px; color:#a3e635; display:none;">-</div>
+                <div class="hud-sub">
+                    뱃지 <span id="hud-badges" style="color:var(--neon-amber)">0</span>/<span id="hud-badges-max">5</span> | 소지금 <span id="hud-gold">5000</span>G
+                </div>
+                <div class="hud-sub" id="hud-weather" style="color:var(--neon-amber); margin-top:2px;">
+                    날씨: 맑음 ☀️
+                </div>
+                <div class="hud-sub" id="hud-time" style="color:var(--neon-purple); margin-top:2px;">
+                    시간대: 낮 ☀️
+                </div>
+            </div>
+        </div>
+
+        <!-- 미니맵 -->
+        <div id="minimap-container">
+            <canvas id="minimapCanvas" width="130" height="130"></canvas>
+        </div>
+
+        <!-- 배틀 애니메이션 & 스프라이트 레이어 -->
+        <div id="battle-overlay">
+            <div id="legend-flash-overlay"></div>
+            <div id="mega-evolve-overlay"><div class="mega-rays"></div><div class="mega-core"></div></div>
+            <div id="pokeball-anim" class="ball-monster"></div>
+
+            <!-- 실제 게임처럼 적/내 포켓몬 이름·레벨·HP바를 전투 중 항상 표시하는 정보창 -->
+            <div id="enemy-info-box" class="battle-info-box info-enemy">
+                <div class="info-row-top">
+                    <span id="enemy-info-name">-</span>
+                    <span id="enemy-info-level">Lv.-</span>
+                </div>
+                <div class="bar-container info-hp-bar">
+                    <div id="enemy-info-hp-bar" class="bar-fill bar-hp" style="width:100%"></div>
+                </div>
+                <div id="enemy-info-status" class="info-status-row"></div>
+            </div>
+            <div id="player-info-box" class="battle-info-box info-player">
+                <div class="info-row-top">
+                    <span id="player-info-name">-</span>
+                    <span id="player-info-level">Lv.-</span>
+                </div>
+                <div class="bar-container info-hp-bar">
+                    <div id="player-info-hp-bar" class="bar-fill bar-hp" style="width:100%"></div>
+                </div>
+                <div id="player-info-hp-text" class="info-hp-text">-/-</div>
+                <div class="bar-container info-exp-bar">
+                    <div id="player-info-exp-bar" class="bar-fill bar-exp" style="width:0%"></div>
+                </div>
+                <div id="player-info-status" class="info-status-row"></div>
+            </div>
+
+            <div id="enemy-sprite-box" class="sprite-box">
+                <img id="enemy-sprite" class="sprite-img" src="" alt="Enemy">
+            </div>
+            <div id="player-sprite-box" class="sprite-box">
+                <img id="player-sprite" class="sprite-img" src="" alt="Player">
+            </div>
+        </div>
+
+        <!-- 배틀 하단 대화창 및 컨트롤 버튼 -->
+        <div id="battle-panel">
+            <div id="dialog-box">
+                <span id="dialog-text"></span><span id="dialog-cursor">▼</span>
+            </div>
+            <!-- 실제 게임처럼 [싸우다/가방/포켓몬/도망] 1차 커맨드 → 기술 2차 메뉴 구조 -->
+            <div id="command-grid" class="command-grid"></div>
+            <div id="action-grid" class="action-grid"></div>
+        </div>
+
+        <!-- 스타팅 선택 모달 -->
+        <div id="starter-modal" class="modal">
+            <div class="modal-card" style="text-align: center;">
+                <div class="modal-titlebar modal-titlebar-cyan">
+                    <h2>⭐ 스타팅 포켓몬을 선택하세요!</h2>
+                    <span style="width:28px;"></span>
+                </div>
+                <p style="font-size:12px; color:var(--text-sub);">모험을 함께 시작할 모험의 파트너를 선택하세요.</p>
+                <div class="starter-grid" id="starter-options"></div>
+            </div>
+        </div>
+
+        <!-- 파티 포켓몬 엔트리 모달 -->
+        <div id="party-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar modal-titlebar-cyan">
+                    <h3 id="party-modal-title">🎒 포켓몬 파티 (최대 6마리)</h3>
+                    <div id="party-modal-closebtn" class="modal-close-btn" onclick="closePartyModal()">✕</div>
+                </div>
+                <div id="party-list-container" class="party-list"></div>
+                <button id="party-modal-bottom-close" onclick="closePartyModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- 인벤토리 모달 -->
+        <div id="bag-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar modal-titlebar-green">
+                    <h3>🎒 가방 / 아이템</h3>
+                    <div class="modal-close-btn" onclick="closeBagModal()">✕</div>
+                </div>
+                <div id="bag-list-container" class="bag-list"></div>
+                <button onclick="closeBagModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- 포켓몬 도감 모달 -->
+        <div id="pokedex-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar modal-titlebar-red">
+                    <h3>📖 포켓몬 도감 <span id="pokedex-progress" style="font-size:12px; font-weight:normal;"></span></h3>
+                    <div class="modal-close-btn" onclick="closePokedexModal()">✕</div>
+                </div>
+                <div class="pokedex-toolbar">
+                    <input id="pokedex-search" type="text" placeholder="이름 또는 도감번호 검색" oninput="renderPokedexList()">
+                    <select id="pokedex-type" onchange="renderPokedexList()"></select>
+                    <label class="pokedex-toggle"><input id="pokedex-found-only" type="checkbox" onchange="renderPokedexList()"> 발견한 종만</label>
+                </div>
+                <div id="pokedex-list-container" class="pokedex-grid"></div>
+                <button onclick="closePokedexModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- 메가진화 도감 모달: 지금까지 발견한 포켓몬 중 메가진화가 가능한 종을 한눈에 볼 수 있다 -->
+        <div id="mega-guide-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
+                    <h3>⚡ 메가진화 도감</h3>
+                    <div class="modal-close-btn" onclick="closeMegaGuideModal()">✕</div>
+                </div>
+                <p style="font-size:12px; color:var(--text-sub); margin: 6px 0 12px;">
+                    발견한 포켓몬 중 메가진화 스톤을 지니면 전투 중 [⚡ 메가진화] 버튼으로 변신할 수 있는 종입니다. 메가진화는 한 전투당 단 한 번만 가능합니다.
+                </p>
+                <div id="mega-guide-list-container" class="pokedex-grid"></div>
+                <button onclick="closeMegaGuideModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- 프렌들리 숍(상점) 모달 -->
+        <div id="shop-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar modal-titlebar-amber">
+                    <h3>🏪 프렌들리 숍</h3>
+                    <div class="modal-close-btn" onclick="closeShopModal()">✕</div>
+                </div>
+                <div id="shop-list-container" class="shop-grid"></div>
+                <button onclick="closeShopModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- 타이틀 화면 -->
+        <div id="title-modal" class="modal title-modal" style="display:none;">
+            <div class="title-inner">
+                <div class="title-logo">
+                    <span class="title-sub">POKÉMON</span>
+                    <span class="title-main">ULTRA EXPANSION</span>
+                    <span class="title-kr">포켓몬스터 : 울트라 익스팬션</span>
+                </div>
+                <div id="title-save-info" class="title-save-info"></div>
+                <div id="title-account" class="title-account"></div>
+                <div class="title-menu">
+                    <button id="title-continue" class="title-btn title-btn-primary" onclick="titleContinue()">▶ 이어하기</button>
+                    <button class="title-btn" onclick="titleNewGame()">✦ 새로운 모험</button>
+                    <button id="title-erase" class="title-btn title-btn-danger" onclick="titleEraseSave()">🗑 저장 데이터 삭제</button>
+                    <button id="title-upgrade" class="title-btn title-btn-primary" onclick="startGuestUpgrade()">✦ 계정 만들어 기록 옮기기</button>
+                    <button id="title-logout" class="title-btn" onclick="logoutAccount()">👤 계정 전환 / 로그아웃</button>
+                    <button id="title-delete-account" class="title-btn title-btn-danger" onclick="deleteCurrentAccount()">⚠ 계정 삭제</button>
+                </div>
+                <div class="title-hint">[W/A/S/D]로 이동 · 진행 상황은 자동 저장됩니다 · 조작 방법은 화면 우상단 [?] 또는 <kbd>?</kbd> 키</div>
+            </div>
+        </div>
+
+        <!-- 모험 기록 / 업적 모달 -->
+        <div id="record-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar" style="background: linear-gradient(135deg, #0f766e, #14b8a6);">
+                    <h3>📔 모험의 기록</h3>
+                    <div class="modal-close-btn" onclick="closeRecordModal()">✕</div>
+                </div>
+                <div id="record-stats-grid" class="record-stats-grid"></div>
+                <div class="record-section-title">🏆 업적 <span id="record-ach-count"></span></div>
+                <div id="record-ach-grid" class="record-ach-grid"></div>
+                <button onclick="closeRecordModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- PC 보관함 모달 -->
+        <div id="box-modal" class="modal">
+            <div class="modal-card modal-card-wide">
+                <div class="modal-titlebar" style="background: linear-gradient(135deg, #1d4ed8, #3b82f6);">
+                    <h3>💾 포켓몬 보관 시스템</h3>
+                    <div class="modal-close-btn" onclick="closeBoxModal()">✕</div>
+                </div>
+                <div class="box-columns">
+                    <div class="box-col">
+                        <div class="box-col-title">🎒 파티 <span id="box-party-count"></span></div>
+                        <div id="box-party-list" class="box-list"></div>
+                    </div>
+                    <div class="box-col">
+                        <div class="box-col-title">💾 보관함 <span id="box-storage-count"></span></div>
+                        <div id="box-storage-list" class="box-list"></div>
+                    </div>
+                </div>
+                <button onclick="closeBoxModal()" class="btn-action" style="margin-top:14px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- 기술 습득 (배울 기술이 있는데 이미 4개를 익힌 경우) -->
+        <div id="learn-move-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar" style="background: linear-gradient(135deg, #1d4ed8, #60a5fa);">
+                    <h3>📘 새로운 기술</h3>
+                    <span style="width:28px;"></span>
+                </div>
+                <p id="learn-move-desc" style="font-size:12px; color:var(--text-sub); margin:8px 0 12px;"></p>
+                <div id="learn-move-new" class="learn-new-move"></div>
+                <div class="record-section-title">잊을 기술을 고르세요</div>
+                <div id="learn-move-list" class="learn-move-list"></div>
+                <button onclick="skipMoveLearn()" class="btn-action" style="margin-top:14px; width:100%;">그만두기 (배우지 않는다)</button>
+            </div>
+        </div>
+
+        <!-- 포켓몬 상세 정보 -->
+        <div id="detail-modal" class="modal">
+            <div class="modal-card modal-card-wide">
+                <div class="modal-titlebar" style="background: linear-gradient(135deg, #7c2d12, #ea580c);">
+                    <h3 id="detail-title">포켓몬 정보</h3>
+                    <div class="modal-close-btn" onclick="closeDetailModal()">✕</div>
+                </div>
+                <div id="detail-body"></div>
+                <button onclick="closeDetailModal()" class="btn-action" style="margin-top:14px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- NPC 대화창 -->
+        <div id="npc-dialog">
+            <div id="npc-dialog-name"></div>
+            <div id="npc-dialog-text"></div>
+            <div id="npc-dialog-hint">[스페이스] 계속</div>
+        </div>
+
+        <!-- 마음의 엠블럼(젬) 스킬 커스텀 모달 -->
+        <div id="gem-modal" class="modal">
+            <div class="modal-card">
+                <div class="modal-titlebar modal-titlebar-pink">
+                    <h3>💎 마음의 엠블럼 - 스킬 커스텀 &amp; 융합</h3>
+                    <div class="modal-close-btn" onclick="closeGemModal()">✕</div>
+                </div>
+                <div id="gem-list-container" class="gem-list"></div>
+                <button onclick="closeGemModal()" class="btn-action" style="margin-top:16px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+        <!-- ================================================================
+             부팅 인트로 : 게임기 전원이 들어오며 화면이 켜지는 연출
+             ================================================================ -->
+        <div id="boot-screen">
+            <div class="boot-crt">
+                <div class="boot-body">
+                    <div class="boot-logo">
+                        <span class="boot-ball"></span>
+                        <div class="boot-brand">
+                            <span class="boot-brand-sub">POKÉMON</span>
+                            <span class="boot-brand-main">ULTRA EXPANSION</span>
+                        </div>
+                    </div>
+                    <div class="boot-bar"><div id="boot-bar-fill" class="boot-bar-fill"></div></div>
+                    <div id="boot-status" class="boot-status">SYSTEM CHECK</div>
+                </div>
+                <div class="boot-scan"></div>
+                <div class="boot-glow"></div>
+            </div>
+            <div class="boot-skip">아무 키나 누르면 건너뜁니다</div>
+        </div>
+
+        <!-- ================================================================
+             로그인 / 회원가입 (계정은 이 기기에만 저장된다)
+             ================================================================ -->
+        <div id="login-modal" class="modal login-modal">
+            <div class="login-card">
+                <div class="login-head">
+                    <span class="login-ball"></span>
+                    <div>
+                        <div class="login-title">트레이너 인증</div>
+                        <div class="login-sub">계정마다 모험 기록이 따로 저장됩니다</div>
+                    </div>
+                </div>
+
+                <div id="storage-warning" class="storage-warning" style="display:none;"></div>
+                <div class="login-tabs">
+                    <button id="auth-tab-login" class="login-tab active" onclick="switchAuthTab('login')">로그인</button>
+                    <button id="auth-tab-signup" class="login-tab" onclick="switchAuthTab('signup')">회원가입</button>
+                </div>
+
+                <form id="auth-login-form" class="login-form" onsubmit="return submitLogin(event)">
+                    <label class="login-field">
+                        <span>아이디</span>
+                        <input id="login-id" type="text" maxlength="16" autocomplete="username" placeholder="영문·숫자 4~16자">
+                    </label>
+                    <label class="login-field">
+                        <span>비밀번호</span>
+                        <input id="login-pw" type="password" maxlength="32" autocomplete="current-password" placeholder="4자 이상">
+                    </label>
+                    <label class="login-check">
+                        <input id="login-remember" type="checkbox" checked> 이 기기에서 자동 로그인
+                    </label>
+                    <div id="login-msg" class="login-msg"></div>
+                    <button type="submit" class="login-btn primary">▶ 로그인</button>
+                </form>
+
+                <form id="auth-signup-form" class="login-form" style="display:none;" onsubmit="return submitSignup(event)">
+                    <label class="login-field">
+                        <span>아이디</span>
+                        <input id="signup-id" type="text" maxlength="16" autocomplete="username" placeholder="영문·숫자 4~16자">
+                    </label>
+                    <label class="login-field">
+                        <span>트레이너 이름</span>
+                        <input id="signup-name" type="text" maxlength="10" placeholder="게임 안에서 불릴 이름">
+                    </label>
+                    <label class="login-field">
+                        <span>비밀번호</span>
+                        <input id="signup-pw" type="password" maxlength="32" autocomplete="new-password" placeholder="4자 이상">
+                    </label>
+                    <label class="login-field">
+                        <span>비밀번호 확인</span>
+                        <input id="signup-pw2" type="password" maxlength="32" autocomplete="new-password" placeholder="한 번 더 입력">
+                    </label>
+                    <label id="signup-import-row" class="login-check" style="display:none;">
+                        <input id="signup-import-guest" type="checkbox"> 🎫 게스트로 진행한 기록을 이 계정으로 가져오기
+                    </label>
+                    <div id="signup-msg" class="login-msg"></div>
+                    <button type="submit" class="login-btn primary">✦ 계정 만들기</button>
+                </form>
+
+                <div class="login-divider"><span>또는</span></div>
+                <button type="button" class="login-btn ghost" onclick="askGuestLogin()">🎫 게스트로 시작</button>
+
+                <div id="login-accounts" class="login-accounts"></div>
+                <div class="login-foot">계정과 저장 데이터는 이 브라우저에만 보관됩니다.</div>
+            </div>
+        </div>
+
+        <!-- 게스트 시작 전 확인 -->
+        <div id="guest-confirm" class="modal guest-confirm">
+            <div class="guest-card">
+                <div class="guest-icon">🎫</div>
+                <div class="guest-title">진짜 게스트로 하실 건가요?</div>
+                <ul class="guest-body">
+                    <li>게스트 기록은 <b>이 브라우저에만</b> 남고 비밀번호로 보호되지 않습니다.</li>
+                    <li>다른 사람이 게스트로 새로 시작하면 <b>기록이 덮어써집니다.</b></li>
+                    <li>나중에 계정을 만들 때 지금까지의 기록을 <b>그대로 옮길 수 있습니다.</b></li>
+                </ul>
+                <div id="guest-existing" class="guest-existing"></div>
+                <div class="guest-btns">
+                    <button class="login-btn primary" onclick="confirmGuestLogin()">네, 게스트로 시작할게요</button>
+                    <button class="login-btn ghost" onclick="cancelGuestLogin()">아니요, 계정으로 할게요</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 조작 방법 (화면 밖 안내 바 대신 게임 안에서 연다) -->
+        <div id="help-modal" class="modal">
+            <div class="modal-card help-card">
+                <div class="modal-titlebar" style="background: linear-gradient(135deg, #1d4ed8, #3b82f6);">
+                    <h3>🎮 조작 방법</h3>
+                    <div class="modal-close-btn" onclick="closeHelpModal()">✕</div>
+                </div>
+                <div id="help-grid" class="help-grid"></div>
+                <div class="help-foot">진행 상황은 자동 저장되며, 이 창은 <kbd>?</kbd> 또는 <kbd>Esc</kbd>로 여닫을 수 있습니다.</div>
+                <button onclick="closeHelpModal()" class="btn-action" style="margin-top:14px; width:100%;">닫기</button>
+            </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="pokemon.js"></script>
+    <script src="learnsets.js"></script>
+    <script src="reborn.js"></script>
+    <script src="field3d.js"></script>
+
+</body>
+</html>

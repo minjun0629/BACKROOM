@@ -1,0 +1,174 @@
+/* ==========================================================================
+   리본 스타일 리메이크 레이어 - 신규 UI 컴포넌트 전용 스타일
+   (기존 디자인은 건드리지 않고, 새로 생긴 요소만 원본 톤에 맞춰 정의한다)
+   ========================================================================== */
+
+/* ---------- 필드 HUD 보조 줄 ---------- */
+.rb-cap { margin-top: 5px !important; }
+.rb-cap b { color: var(--neon-amber); }
+.rb-cap.over { color: var(--neon-pink) !important; }
+.rb-cap .rb-warn { color: var(--neon-pink); animation: rbBlink 1s steps(2) infinite; }
+@keyframes rbBlink { 50% { opacity: 0.3; } }
+
+/* ---------- 기술 버튼의 필드 보정 태그 ---------- */
+.rb-move-tag {
+    display: inline-block;
+    font-style: normal;
+    font-size: 9px;
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 6px;
+    vertical-align: 1px;
+    color: #fff;
+    background: var(--fc, #f59e0b);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.45);
+}
+.rb-move-tag.down { background: #94a3b8; }
+.rb-move-tag.stab { background: var(--poke-blue); }
+.rb-move-tag.shift { background: #fff; color: #b45309; border: 1px dashed #b45309; text-shadow: none; }
+
+/* ---------- 필드 배너 (전투 중 우상단) ---------- */
+#rb-field-banner {
+    position: absolute;
+    top: 18px; right: 24px;
+    z-index: 13;
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px 6px 10px;
+    background: var(--panel-bg);
+    border: var(--pixel-border);
+    border-left: 8px solid var(--fc, #94a3b8);
+    border-radius: 10px;
+    box-shadow: var(--pixel-shadow);
+    color: var(--text-main);
+    font-size: 13px;
+    pointer-events: auto;
+    cursor: help;
+    max-width: 300px;
+}
+#rb-field-banner .rb-fb-icon { font-size: 16px; }
+#rb-field-banner .rb-fb-desc {
+    display: none;
+    position: absolute; top: calc(100% + 6px); right: 0;
+    width: 280px;
+    background: var(--panel-bg);
+    border: var(--pixel-border);
+    border-radius: 10px;
+    box-shadow: var(--pixel-shadow);
+    padding: 8px 10px;
+    font-size: 11px; line-height: 1.5;
+    color: var(--text-main);
+}
+#rb-field-banner:hover .rb-fb-desc { display: block; }
+#rb-field-banner.pulse { animation: rbBannerPulse 1s ease; }
+@keyframes rbBannerPulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+#rb-field-sweep {
+    position: absolute;
+    left: 0; right: 0; top: 150px;
+    height: 74px;
+    z-index: 14;
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(90deg, transparent, rgba(255,250,240,0.92) 18%, rgba(255,250,240,0.92) 82%, transparent);
+    border-top: 3px solid var(--fc);
+    border-bottom: 3px solid var(--fc);
+    pointer-events: none;
+}
+#rb-field-sweep.play { display: flex; animation: rbSweep 1.7s cubic-bezier(.2,.9,.2,1) both; }
+#rb-field-sweep .rb-fs-label { font-family: 'Press Start 2P', monospace; font-size: 10px; color: #2b2b2b; letter-spacing: 6px; }
+#rb-field-sweep .rb-fs-name { font-size: 24px; color: #2b2b2b; text-shadow: 2px 2px 0 rgba(255,255,255,0.8); margin-top: 4px; }
+@keyframes rbSweep {
+    0% { transform: scaleY(0); opacity: 0; }
+    12% { transform: scaleY(1); opacity: 1; }
+    80% { transform: scaleY(1); opacity: 1; }
+    100% { transform: scaleY(0); opacity: 0; }
+}
+
+#rb-pop-layer { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
+.rb-pop {
+    position: absolute;
+    font-size: 15px;
+    color: var(--pc, #fff);
+    -webkit-text-stroke: 3px #2b2b2b;
+    paint-order: stroke fill;
+    white-space: nowrap;
+    animation: rbPop 1.6s ease-out forwards;
+}
+.rb-pop.at-enemy { left: 640px; top: 110px; }
+.rb-pop.at-player { left: 200px; top: 250px; }
+.rb-pop.at-center { left: 50%; top: 190px; transform: translateX(-50%); font-size: 20px; }
+@keyframes rbPop {
+    0% { opacity: 0; translate: 0 10px; }
+    15% { opacity: 1; translate: 0 0; }
+    75% { opacity: 1; }
+    100% { opacity: 0; translate: 0 -34px; }
+}
+
+/* ---------- 기록 창 [J] ---------- */
+.rb-titlebar { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+.rb-tabs { display: flex; gap: 6px; margin: 0 0 12px; }
+.rb-tab {
+    flex: 1;
+    font-family: 'Jua', sans-serif; font-size: 13px;
+    padding: 8px 6px;
+    background: #fef3e2; color: #2b2b2b;
+    border: 2px solid #2b2b2b; border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.35);
+}
+.rb-tab.active { background: var(--poke-blue); color: #fff; }
+.rb-obj-card {
+    display: flex; gap: 10px; align-items: center;
+    background: #fff; color: var(--text-main);
+    padding: 12px 14px; border-radius: 10px;
+    border: 2px solid #2b2b2b;
+    font-size: 14px;
+}
+.rb-obj-big-tag { background: var(--poke-red); color: #fff; padding: 3px 9px; border-radius: 8px; font-size: 12px; white-space: nowrap; }
+.rb-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+.rb-stat-row > div { background: #fff; border: 2px solid #2b2b2b; border-radius: 8px; padding: 8px; text-align: center; font-size: 12px; }
+.rb-stat-row b { font-size: 18px; color: var(--neon-blue); }
+.rb-stat-row span { font-size: 10px; color: var(--text-sub); }
+.rb-chapters { display: flex; flex-direction: column; gap: 5px; }
+.rb-ch { display: flex; gap: 10px; font-size: 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 10px; }
+.rb-ch b { min-width: 170px; color: var(--poke-blue); }
+.rb-tip { margin-top: 10px; font-size: 11px; color: var(--text-sub); }
+
+.rb-gym-row {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 2px solid #2b2b2b; border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 6px;
+}
+.rb-gym-row.done { background: #fff8dc; }
+.rb-gym-row.champ { border-style: dashed; }
+.rb-gym-no { width: 28px; height: 28px; border-radius: 50%; background: var(--poke-red); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; border: 2px solid #2b2b2b; }
+.rb-gym-main { flex: 1; min-width: 0; }
+.rb-gym-name { font-size: 14px; }
+.rb-gym-name span { font-size: 11px; color: var(--text-sub); margin-left: 4px; }
+.rb-gym-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+.rb-gym-gate { font-size: 11px; color: #7c3aed; margin-top: 2px; }
+.rb-gym-gate.done { color: #15803d; }
+.rb-gym-field { font-size: 11px; padding: 3px 8px; border-radius: 8px; background: #fff; border: 2px solid var(--fc); white-space: nowrap; }
+.rb-gym-state { width: 26px; text-align: center; font-size: 16px; }
+
+.rb-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rb-field-card { background: #fff; border: 2px solid #2b2b2b; border-radius: 8px; padding: 10px 12px; border-left: 8px solid var(--fc); }
+.rb-fc-head { font-size: 14px; margin-bottom: 4px; }
+.rb-fc-desc { font-size: 11px; line-height: 1.5; color: var(--text-sub); }
+.rb-shift { display: inline-block; margin-top: 5px; margin-right: 4px; font-size: 10px; color: #b45309; border: 1px dashed #b45309; border-radius: 6px; padding: 1px 5px; }
+
+/* ---------- 스타팅 포켓몬 (세대별 27종) ---------- */
+#starter-options.rb-starter-wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 470px; overflow-y: auto; padding: 4px; }
+.rb-starter-group { background: #fff; border: 2px solid #2b2b2b; border-radius: 10px; padding: 6px; }
+.rb-starter-region { font-size: 12px; color: #fff; background: var(--poke-blue); border-radius: 6px; padding: 2px 8px; margin-bottom: 6px; display: inline-block; }
+.rb-starter-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.rb-starter-row .starter-card { padding: 4px 2px; font-size: 11px; }
+.rb-starter-row .starter-card img { width: 56px; height: 56px; }
+.rb-starter-row .type-badge { font-size: 9px; padding: 1px 4px; }
+
+/* 3D 필드: DS 해상도로 그린 화면을 도트 그대로 확대 */
+#threeCanvas.rb-ds-pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
